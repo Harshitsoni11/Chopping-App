@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, FlatList, ImageBackground, TouchableOpacity, StyleSheet } from "react-native";
-import Color from "../constants/Color";
+import Color from "../constants/color";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
