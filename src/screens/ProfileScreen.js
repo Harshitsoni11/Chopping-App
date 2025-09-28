@@ -11,7 +11,9 @@ import {
   Alert,
   TextInput,
   Modal,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useApp } from "../context/AppContext";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -20,6 +22,7 @@ import ErrorMessage from "../components/ErrorMessage";
 const { width } = Dimensions.get("window");
 
 const ProfileScreen = () => {
+  const insets = useSafeAreaInsets();
   const { user, updateUser, loading, error } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -27,6 +30,14 @@ const ProfileScreen = () => {
     name: user.name,
     email: user.email,
   });
+
+  // Calculate responsive bottom padding
+  const getBottomPadding = () => {
+    const tabBarHeight = 65; // Height of bottom tab bar
+    const safeAreaBottom = insets.bottom;
+    const totalBottomPadding = tabBarHeight + safeAreaBottom + 20; // Extra 20px for breathing room
+    return totalBottomPadding;
+  };
 
   const menuItems = [
     { id: 1, title: "My Orders", icon: "📦", action: "orders" },
@@ -81,16 +92,16 @@ const ProfileScreen = () => {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Logout", style: "destructive", onPress: () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: () => {
           Alert.alert("Logged Out", "You have been logged out successfully!");
-        }}
-      ]
-    );
+        },
+      },
+    ]);
   };
 
   if (loading) {
@@ -103,11 +114,16 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={[styles.scrollView, { paddingBottom: getBottomPadding() }]}
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Profile</Text>
-          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={handleEditProfile}
+          >
             <Ionicons name="create-outline" size={20} color="#333" />
           </TouchableOpacity>
         </View>
@@ -115,10 +131,7 @@ const ProfileScreen = () => {
         {/* User Info Section */}
         <View style={styles.userInfoSection}>
           <View style={styles.profileImageContainer}>
-            <Image
-              source={{ uri: user.avatar }}
-              style={styles.profileImage}
-            />
+            <Image source={{ uri: user.avatar }} style={styles.profileImage} />
             <View style={styles.socialIcon}>
               <Text style={styles.socialIconText}>𝕏</Text>
             </View>
@@ -147,8 +160,8 @@ const ProfileScreen = () => {
         {/* Menu Items */}
         <View style={styles.menuSection}>
           {menuItems.map((item) => (
-            <TouchableOpacity 
-              key={item.id} 
+            <TouchableOpacity
+              key={item.id}
               style={styles.menuItem}
               onPress={() => handleMenuPress(item.action)}
             >
@@ -166,6 +179,8 @@ const ProfileScreen = () => {
           <Ionicons name="log-out-outline" size={20} color="#fff" />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
+        
+        <View style= {{height:80}}></View>
       </ScrollView>
 
       {/* Edit Profile Modal */}
@@ -178,13 +193,15 @@ const ProfileScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Profile</Text>
-            
+
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Name</Text>
               <TextInput
                 style={styles.textInput}
                 value={editForm.name}
-                onChangeText={(text) => setEditForm({...editForm, name: text})}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, name: text })
+                }
                 placeholder="Enter your name"
               />
             </View>
@@ -194,7 +211,9 @@ const ProfileScreen = () => {
               <TextInput
                 style={styles.textInput}
                 value={editForm.email}
-                onChangeText={(text) => setEditForm({...editForm, email: text})}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, email: text })
+                }
                 placeholder="Enter your email"
                 keyboardType="email-address"
               />
@@ -215,10 +234,10 @@ const ProfileScreen = () => {
               </TouchableOpacity>
             </View>
           </View>
-  </View>
+        </View>
       </Modal>
     </SafeAreaView>
-);
+  );
 };
 
 const styles = StyleSheet.create({
@@ -228,7 +247,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingBottom: 85, // Adjusted padding for smaller bottom tab bar
   },
   header: {
     flexDirection: "row",
@@ -365,7 +383,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
-    marginBottom: 50, // Adjusted margin for smaller bottom tab bar
   },
   logoutText: {
     color: "#fff",

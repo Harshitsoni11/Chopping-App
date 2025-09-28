@@ -3,20 +3,22 @@ import { StyleSheet, SafeAreaView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer, getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppProvider } from "./src/context/AppContext";
 import HomeNavigator from "./src/Navigator/HomeNavigator";
 import CategoryNavigator from "./src/Navigator/CategoryNavigator";
-import CartScreen from "./src/screens/CartScreen";
+import CartNavigator from "./src/Navigator/CartNavigator";
 import ProfileScreen from "./src/screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 
 const App = () => {
   return (
-    <AppProvider>
-      <SafeAreaView style={styles.container}>
-        <NavigationContainer>
+    <SafeAreaProvider>
+      <AppProvider>
+        <SafeAreaView style={styles.container}>
+          <NavigationContainer>
           <Tab.Navigator
             screenOptions={({ route }) => ({
               headerShown: false,
@@ -63,12 +65,23 @@ const App = () => {
                 return {};
               }}
             />
-            <Tab.Screen name="Cart" component={CartScreen} />
+            <Tab.Screen 
+              name="Cart" 
+              component={CartNavigator}
+              options={({ route }) => {
+                const routeName = getFocusedRouteNameFromRoute(route) ?? "Cart";
+                if (routeName === "DeliveryPayment") {
+                  return { tabBarStyle: { display: "none" } };
+                }
+                return {};
+              }}
+            />
             <Tab.Screen name="Profile" component={ProfileScreen} />
           </Tab.Navigator>
-        </NavigationContainer>
-      </SafeAreaView>
-    </AppProvider>
+          </NavigationContainer>
+        </SafeAreaView>
+      </AppProvider>
+    </SafeAreaProvider>
   );
 };
 

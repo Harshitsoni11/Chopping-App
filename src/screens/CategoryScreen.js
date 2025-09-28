@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, FlatList, ImageBackground, TouchableOpacity, StyleSheet, TextInput, Keyboard } from "react-native";
+import { View, Text, FlatList, ImageBackground, TouchableOpacity, StyleSheet, TextInput, Keyboard, Platform } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Color from "../constants/color";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -8,9 +9,18 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 
 const CategoryScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { categories, loading, error } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Calculate responsive bottom padding
+  const getBottomPadding = () => {
+    const tabBarHeight = 65; // Height of bottom tab bar
+    const safeAreaBottom = insets.bottom;
+    const totalBottomPadding = tabBarHeight + safeAreaBottom + 20; // Extra 20px for breathing room
+    return totalBottomPadding;
+  };
 
   // Filter categories by search query
   const filteredCategories = categories.filter(category =>
@@ -58,7 +68,7 @@ const CategoryScreen = () => {
         keyExtractor={(item) => item.id}
         numColumns={2}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.flatListContent}
+        contentContainerStyle={[styles.flatListContent, { paddingBottom: getBottomPadding() }]}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
@@ -129,7 +139,6 @@ const styles = StyleSheet.create({
   },
   flatListContent: {
     paddingHorizontal: 15,
-    paddingBottom: 85,
   },
   card: {
     backgroundColor: "#fff",

@@ -10,20 +10,34 @@ import {
   Dimensions,
   Alert,
   Keyboard,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useApp } from "../context/AppContext";
 import AutoScrollSlider from "../components/AutoScrollSlider";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
+import ProductDetailModal from "../components/ProductDetail/ProductDetailModal";
 
 const { width } = Dimensions.get("window");
 
 const HomeScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { products, loading, error, addToCart, setError } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // Calculate responsive bottom padding
+  const getBottomPadding = () => {
+    const tabBarHeight = 65; // Height of bottom tab bar
+    const safeAreaBottom = insets.bottom;
+    const totalBottomPadding = tabBarHeight + safeAreaBottom + 20; // Extra 20px for breathing room
+    return totalBottomPadding;
+  };
 
   // Filter products by search query
   const filteredProducts = products.filter(product =>
@@ -47,14 +61,16 @@ const HomeScreen = () => {
     }
   };
 
+  const handleProductPress = (product) => {
+    setSelectedProduct(product);
+    setModalVisible(true);
+  };
+
   const renderProductCard = (product) => (
     <TouchableOpacity
       key={product.id}
       style={styles.productCard}
-      onPress={() => navigation.navigate('Categories', { 
-        screen: 'CategoryDetail',
-        params: { product }
-      })}
+      onPress={() => handleProductPress(product)}
     >
       <Image source={{ uri: product.image }} style={styles.productImage} />
       <View style={styles.productInfo}>
@@ -72,7 +88,12 @@ const HomeScreen = () => {
         </View>
         <TouchableOpacity
           style={[styles.addButton, !product.inStock && styles.disabledButton]}
-          onPress={() => product.inStock && handleAddToCart(product)}
+          onPress={(e) => {
+            e.stopPropagation();
+            if (product.inStock) {
+              handleAddToCart(product);
+            }
+          }}
           disabled={!product.inStock}
         >
           <Text style={styles.addButtonText}>
@@ -116,7 +137,7 @@ const HomeScreen = () => {
         )}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: getBottomPadding() }]}>
         {/* Auto Scroll Slider */}
         <AutoScrollSlider />
 
@@ -172,6 +193,13 @@ const HomeScreen = () => {
           </>
         )}
       </ScrollView>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        product={selectedProduct}
+      />
     </View>
   );
 };
@@ -182,7 +210,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff" 
   },
   scrollContent: { 
-    paddingBottom: 85 
+    // paddingBottom will be set dynamically
   },
   searchContainer: {
     flexDirection: "row",

@@ -9,21 +9,35 @@ import {
   FlatList,
   Dimensions,
   Alert,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useApp } from "../../context/AppContext";
 import LoadingSpinner from "../LoadingSpinner";
 import ErrorMessage from "../ErrorMessage";
+import ProductDetailModal from "../ProductDetail/ProductDetailModal";
 
 const { width } = Dimensions.get("window");
 
 const CategoryDetail = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
   const { products, addToCart, cartItemsCount, loading, error } = useApp();
   const [sortBy, setSortBy] = useState("name");
   const [filterBy, setFilterBy] = useState("all");
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // Calculate responsive bottom padding
+  const getBottomPadding = () => {
+    const tabBarHeight = 65; // Height of bottom tab bar
+    const safeAreaBottom = insets.bottom;
+    const totalBottomPadding = tabBarHeight + safeAreaBottom + 20; // Extra 20px for breathing room
+    return totalBottomPadding;
+  };
 
   const { categoryTitle = "Products", categoryId } = route.params || {};
 
@@ -59,8 +73,13 @@ const CategoryDetail = () => {
     }
   };
 
+  const handleProductPress = (product) => {
+    setSelectedProduct(product);
+    setModalVisible(true);
+  };
+
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={() => handleProductPress(item)}>
       <Image source={{ uri: item.image }} style={styles.image} />
       <View style={styles.cardContent}>
         <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
@@ -78,7 +97,12 @@ const CategoryDetail = () => {
         </View>
         <TouchableOpacity
           style={[styles.button, !item.inStock && styles.disabledButton]}
-          onPress={() => item.inStock && handleAddToCart(item)}
+          onPress={(e) => {
+            e.stopPropagation();
+            if (item.inStock) {
+              handleAddToCart(item);
+            }
+          }}
           disabled={!item.inStock}
         >
           <Text style={styles.buttonText}>
@@ -86,7 +110,7 @@ const CategoryDetail = () => {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -183,9 +207,16 @@ const CategoryDetail = () => {
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           numColumns={2}
-          contentContainerStyle={styles.flatListContent}
+          contentContainerStyle={[styles.flatListContent, { paddingBottom: getBottomPadding() }]}
         />
       </View>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        product={selectedProduct}
+      />
     </SafeAreaView>
   );
 };
@@ -319,7 +350,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   flatListContent: {
-    paddingBottom: 20,
+    // paddingBottom will be set dynamically
   },
   card: {
     backgroundColor: "#fff",

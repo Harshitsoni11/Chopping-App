@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -8,16 +8,22 @@ import {
   SafeAreaView, 
   Image,
   Alert,
-  Dimensions
+  Dimensions,
+  Platform
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useApp } from "../context/AppContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
+import ProductDetailModal from "../components/ProductDetail/ProductDetailModal";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 export default function CartScreen() {
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const { 
     cart, 
     cartTotal, 
@@ -30,6 +36,17 @@ export default function CartScreen() {
     loading,
     error 
   } = useApp();
+  
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // Calculate responsive bottom padding
+  const getBottomPadding = () => {
+    const tabBarHeight = 65; // Height of bottom tab bar
+    const safeAreaBottom = insets.bottom;
+    const totalBottomPadding = tabBarHeight + safeAreaBottom - 33; // Extra 20px for breathing room
+    return totalBottomPadding;
+  };
 
   const handleQuantityChange = (productId, newQuantity) => {
     if (newQuantity === 0) {
@@ -45,20 +62,8 @@ export default function CartScreen() {
       return;
     }
     
-    Alert.alert(
-      "Checkout", 
-      `Total: $${finalTotal.toFixed(2)}\n\nProceed to payment?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Pay Now", 
-          onPress: () => {
-            Alert.alert("Success!", "Order placed successfully!");
-            clearCart();
-          }
-        }
-      ]
-    );
+    // Navigate to delivery & payment screen
+    navigation.navigate('DeliveryPayment');
   };
 
   const handleClearCart = () => {
@@ -70,6 +75,11 @@ export default function CartScreen() {
         { text: "Clear", style: "destructive", onPress: clearCart }
       ]
     );
+  };
+
+  const handleProductPress = (product) => {
+    setSelectedProduct(product);
+    setModalVisible(true);
   };
 
   if (loading) {
@@ -103,7 +113,11 @@ export default function CartScreen() {
           {/* Cart Items */}
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             {cart.map((item) => (
-              <View key={item.id} style={styles.cartItem}>
+              <TouchableOpacity 
+                key={item.id} 
+                style={styles.cartItem}
+                onPress={() => handleProductPress(item)}
+              >
                 <Image source={{ uri: item.image }} style={styles.itemImage} />
                 <View style={styles.itemDetails}>
                   <Text style={styles.itemName} numberOfLines={2}>{item.title}</Text>
@@ -111,14 +125,20 @@ export default function CartScreen() {
                   <View style={styles.quantityContainer}>
                     <TouchableOpacity
                       style={styles.quantityButton}
-                      onPress={() => handleQuantityChange(item.id, item.quantity - 1)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleQuantityChange(item.id, item.quantity - 1);
+                      }}
                     >
                       <Ionicons name="remove" size={16} color="#666" />
                     </TouchableOpacity>
                     <Text style={styles.quantityText}>{item.quantity}</Text>
                     <TouchableOpacity
                       style={styles.quantityButton}
-                      onPress={() => handleQuantityChange(item.id, item.quantity + 1)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleQuantityChange(item.id, item.quantity + 1);
+                      }}
                     >
                       <Ionicons name="add" size={16} color="#666" />
                     </TouchableOpacity>
@@ -130,17 +150,20 @@ export default function CartScreen() {
                   </Text>
                   <TouchableOpacity
                     style={styles.removeButton}
-                    onPress={() => removeFromCart(item.id)}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      removeFromCart(item.id);
+                    }}
                   >
                     <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
 
           {/* Order Summary */}
-          <View style={styles.orderSummary}>
+          <View style={[styles.orderSummary, { marginBottom: getBottomPadding() }]}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Subtotal ({cartItemsCount} items)</Text>
               <Text style={styles.summaryValue}>${cartTotal.toFixed(2)}</Text>
@@ -161,12 +184,27 @@ export default function CartScreen() {
               <Text style={styles.summaryTotal}>${finalTotal.toFixed(2)}</Text>
             </View>
 
-            <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
-              <Text style={styles.checkoutText}>Proceed to Checkout</Text>
-            </TouchableOpacity>
+            <View style={styles.checkoutButtonsContainer}>
+              <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
+                <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.buyNowBtn} 
+                onPress={() => navigation.navigate('DeliveryPayment')}
+              >
+                <Text style={styles.buyNowText}>Buy Now</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </>
       )}
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        product={selectedProduct}
+      />
     </SafeAreaView>
   );
 }
@@ -294,7 +332,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     marginTop: 10,
-    marginBottom: 50,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
@@ -332,12 +369,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontStyle: "italic",
   },
+  checkoutButtonsContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 10,
+  },
   checkoutBtn: { 
+    flex: 1,
     backgroundColor: "#4CAF50", 
     padding: 16, 
     borderRadius: 12, 
     alignItems: "center", 
-    marginTop: 10,
     shadowColor: "#4CAF50",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -345,6 +387,23 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   checkoutText: { 
+    color: "#fff", 
+    fontSize: 16, 
+    fontWeight: "bold" 
+  },
+  buyNowBtn: {
+    flex: 1,
+    backgroundColor: "#FF6B35", 
+    padding: 16, 
+    borderRadius: 12, 
+    alignItems: "center",
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  buyNowText: {
     color: "#fff", 
     fontSize: 16, 
     fontWeight: "bold" 
