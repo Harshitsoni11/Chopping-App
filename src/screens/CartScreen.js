@@ -34,7 +34,8 @@ export default function CartScreen() {
     removeFromCart, 
     clearCart,
     loading,
-    error 
+    error,
+    t,
   } = useApp();
   
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -94,10 +95,10 @@ export default function CartScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerText}>Shopping Cart</Text>
+        <Text style={styles.headerText}>{t('shoppingCart')}</Text>
         {cart.length > 0 && (
           <TouchableOpacity onPress={handleClearCart} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>Clear All</Text>
+            <Text style={styles.clearButtonText}>{t('clearAll')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -105,8 +106,8 @@ export default function CartScreen() {
       {cart.length === 0 ? (
         <View style={styles.emptyCart}>
           <Ionicons name="cart-outline" size={80} color="#ccc" />
-          <Text style={styles.emptyCartTitle}>Your cart is empty</Text>
-          <Text style={styles.emptyCartText}>Add some fresh produce to get started!</Text>
+          <Text style={styles.emptyCartTitle}>{t('emptyCartTitle')}</Text>
+          <Text style={styles.emptyCartText}>{t('emptyCartText')}</Text>
         </View>
       ) : (
         <>
@@ -165,11 +166,11 @@ export default function CartScreen() {
           {/* Order Summary */}
           <View style={[styles.orderSummary, { marginBottom: getBottomPadding() }]}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal ({cartItemsCount} items)</Text>
+              <Text style={styles.summaryLabel}>{t('subtotal')} ({cartItemsCount} items)</Text>
               <Text style={styles.summaryValue}>${cartTotal.toFixed(2)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Delivery Fee</Text>
+              <Text style={styles.summaryLabel}>{t('deliveryFee')}</Text>
               <Text style={styles.summaryValue}>
                 {deliveryFee === 0 ? "FREE" : `$${deliveryFee.toFixed(2)}`}
               </Text>
@@ -180,19 +181,19 @@ export default function CartScreen() {
               </Text>
             )}
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabelBold}>Total</Text>
+              <Text style={styles.summaryLabelBold}>{t('total')}</Text>
               <Text style={styles.summaryTotal}>${finalTotal.toFixed(2)}</Text>
             </View>
 
             <View style={styles.checkoutButtonsContainer}>
               <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
-                <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+                <Text style={styles.checkoutText}>{t('proceedToCheckout')}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.buyNowBtn} 
                 onPress={() => navigation.navigate('DeliveryPayment')}
               >
-                <Text style={styles.buyNowText}>Buy Now</Text>
+                <Text style={styles.buyNowText}>{t('buyNow')}</Text>
               </TouchableOpacity>
             </View>
           </View>

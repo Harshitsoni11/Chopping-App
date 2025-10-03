@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useMemo } from 'react';
 
 // Initial State
 const initialState = {
@@ -9,6 +9,7 @@ const initialState = {
     avatar: "https://via.placeholder.com/80x80/4A90E2/FFFFFF?text=SJ",
     orders: 5,
     addresses: 2,
+    language: "English",
   },
   products: [
     {
@@ -105,6 +106,7 @@ export const ACTIONS = {
   SET_LOADING: 'SET_LOADING',
   SET_ERROR: 'SET_ERROR',
   UPDATE_USER: 'UPDATE_USER',
+  SET_LANGUAGE: 'SET_LANGUAGE',
 };
 
 // Reducer
@@ -167,6 +169,11 @@ const appReducer = (state, action) => {
         ...state,
         user: { ...state.user, ...action.payload },
       };
+    case ACTIONS.SET_LANGUAGE:
+      return {
+        ...state,
+        user: { ...state.user, language: action.payload },
+      };
 
     default:
       return state;
@@ -209,6 +216,60 @@ export const AppProvider = ({ children }) => {
     dispatch({ type: ACTIONS.UPDATE_USER, payload: userData });
   };
 
+  // i18n: simple resources and helpers
+  const translations = useMemo(() => ({
+    English: {
+      categories: 'Categories',
+      searchCategories: 'Search categories...',
+      cart: 'Cart',
+      profile: 'Profile',
+      addToCart: 'Add to Cart',
+      outOfStock: 'Out of Stock',
+      products: 'Products',
+      filter: 'Filter',
+      shoppingCart: 'Shopping Cart',
+      clearAll: 'Clear All',
+      emptyCartTitle: 'Your cart is empty',
+      emptyCartText: 'Add some fresh produce to get started!',
+      subtotal: 'Subtotal',
+      deliveryFee: 'Delivery Fee',
+      total: 'Total',
+      proceedToCheckout: 'Proceed to Checkout',
+      buyNow: 'Buy Now',
+      myProfile: 'My Profile',
+      language: 'Language',
+    },
+    Hindi: {
+      categories: 'श्रेणियाँ',
+      searchCategories: 'श्रेणियाँ खोजें...',
+      cart: 'कार्ट',
+      profile: 'प्रोफ़ाइल',
+      addToCart: 'कार्ट में जोड़ें',
+      outOfStock: 'स्टॉक में नहीं',
+      products: 'उत्पाद',
+      filter: 'फ़िल्टर',
+      shoppingCart: 'शॉपिंग कार्ट',
+      clearAll: 'सब साफ करें',
+      emptyCartTitle: 'आपकी कार्ट खाली है',
+      emptyCartText: 'शुरू करने के लिए कुछ ताज़ा उत्पाद जोड़ें!',
+      subtotal: 'उप-योग',
+      deliveryFee: 'डिलिवरी शुल्क',
+      total: 'कुल',
+      proceedToCheckout: 'चेकआउट करें',
+      buyNow: 'अभी खरीदें',
+      myProfile: 'मेरा प्रोफ़ाइल',
+      language: 'भाषा',
+    },
+  }), []);
+
+  const setLanguage = (lang) => dispatch({ type: ACTIONS.SET_LANGUAGE, payload: lang });
+
+  const t = (key) => {
+    const lang = state.user.language || 'English';
+    const table = translations[lang] || translations.English;
+    return table[key] || key;
+  };
+
   // Calculate cart totals
   const cartTotal = state.cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   const cartItemsCount = state.cart.reduce((count, item) => count + item.quantity, 0);
@@ -224,6 +285,8 @@ export const AppProvider = ({ children }) => {
     setLoading,
     setError,
     updateUser,
+    setLanguage,
+    t,
     cartTotal,
     cartItemsCount,
     deliveryFee,

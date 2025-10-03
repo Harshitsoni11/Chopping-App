@@ -75,6 +75,12 @@ const App = () => {
                 }
                 return {};
               }}
+              listeners={({ navigation }) => ({
+                tabPress: (e) => {
+                  // Always jump to the root Cart screen when the tab is pressed
+                  navigation.navigate('Cart', { screen: 'Cart' });
+                },
+              })}
             />
             <Tab.Screen name="Profile" component={ProfileScreen} />
           </Tab.Navigator>

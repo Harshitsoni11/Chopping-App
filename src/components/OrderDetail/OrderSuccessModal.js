@@ -1,29 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Modal,
-  SafeAreaView,
+  // SafeAreaView,
   ScrollView,
   Image,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useApp } from '../context/AppContext';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useApp } from '../../context/AppContext';
+import TrackOrderModal from './TrackOrderModal';
+
 
 const { width, height } = Dimensions.get('window');
 
 const OrderSuccessModal = ({ visible, onClose, orderDetails }) => {
   const navigation = useNavigation();
   const { cart, finalTotal, clearCart } = useApp();
+  const insets = useSafeAreaInsets();
+  const [trackVisible, setTrackVisible] = useState(false);
 
   const handleTrackOrder = () => {
-    onClose();
-    // Navigate to a tracking screen or show tracking info
-    navigation.navigate('Home');
+    setTrackVisible(true);
   };
 
   const handleContinueShopping = () => {
@@ -47,22 +50,27 @@ const OrderSuccessModal = ({ visible, onClose, orderDetails }) => {
   };
 
   return (
+    <>
     <Modal
       visible={visible}
       animationType="slide"
       transparent={false}
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container] }>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Order Placed Successfully!</Text>
-          <View style={styles.successIcon}>
-            <Ionicons name="checkmark" size={24} color="#fff" />
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Order Placed Successfully!</Text>
+            <View style={styles.successIcon}>
+              <Ionicons name="checkmark" size={24} color="#fff" />
+            </View>
           </View>
-        </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        >
           {/* Order ID */}
           <View style={styles.orderIdContainer}>
             <Text style={styles.orderId}>{generateOrderId()}</Text>
@@ -73,24 +81,22 @@ const OrderSuccessModal = ({ visible, onClose, orderDetails }) => {
             </View>
           </View>
 
-          {/* Order Progress */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressTabs}>
-              <View style={[styles.progressTab, styles.activeTab]}>
-                <Text style={[styles.progressTabText, styles.activeTabText]}>Confirmed</Text>
-                <View style={styles.activeIndicator} />
+            <View style={styles.progressContainer}>
+              <View style={styles.progressTabs}>
+                <View style={[styles.progressTab, styles.activeTab]}>
+                  <Text style={[styles.progressTabText, styles.activeTabText]}>Confirmed</Text>
+                  <View style={styles.activeIndicator} />
+                </View>
+                <View style={styles.progressTab}>
+                  <Text style={styles.progressTabText}>Processing</Text>
+                </View>
+                <View style={styles.progressTab}>
+                  <Text style={styles.progressTabText}>Out for Delivery</Text>
+                </View>
               </View>
-              <View style={styles.progressTab}>
-                <Text style={styles.progressTabText}>Processing</Text>
-              </View>
-              <View style={styles.progressTab}>
-                <Text style={styles.progressTabText}>Out for Delivery</Text>
-              </View>
+              <Text style={styles.orderIdText}>Order {generateOrderId()}</Text>
             </View>
-            <Text style={styles.orderIdText}>Order {generateOrderId()}</Text>
-          </View>
 
-          {/* Delivery Address */}
           <View style={styles.addressContainer}>
             <Text style={styles.sectionTitle}>Delivery Address</Text>
             <View style={styles.addressCard}>
@@ -105,7 +111,6 @@ const OrderSuccessModal = ({ visible, onClose, orderDetails }) => {
             </View>
           </View>
 
-          {/* Order Summary */}
           <View style={styles.summaryContainer}>
             <Text style={styles.sectionTitle}>Order Summary</Text>
             <View style={styles.productImagesContainer}>
@@ -127,7 +132,6 @@ const OrderSuccessModal = ({ visible, onClose, orderDetails }) => {
             </View>
           </View>
 
-          {/* Total Amount */}
           <View style={styles.totalContainer}>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total Amount</Text>
@@ -141,16 +145,32 @@ const OrderSuccessModal = ({ visible, onClose, orderDetails }) => {
         </ScrollView>
 
         {/* Action Buttons */}
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity style={styles.trackOrderButton} onPress={handleTrackOrder}>
-            <Text style={styles.trackOrderText}>Track Order</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.continueShoppingButton} onPress={handleContinueShopping}>
-            <Text style={styles.continueShoppingText}>Continue Shopping</Text>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity style={styles.trackOrderButton} onPress={handleTrackOrder}>
+              <Text style={styles.trackOrderText}>Track Order</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.continueShoppingButton} onPress={handleContinueShopping}>
+              <Text style={styles.continueShoppingText}>Continue Shopping</Text>
+            </TouchableOpacity>
+          </View>
       </SafeAreaView>
+
+      <TrackOrderModal
+      visible={trackVisible}
+      onClose={() => setTrackVisible(false)}
+      onGoHome={() => {
+        setTrackVisible(false);
+        const parentNav = navigation.getParent ? navigation.getParent() : null;
+        if (parentNav) parentNav.navigate('Home');
+        else navigation.navigate('Home');
+      }}
+      generateOrderId={generateOrderId}
+      getDeliveryTime={getDeliveryTime}
+    />
     </Modal>
+    {/* Separate Track Order Modal */}
+  
+    </>
   );
 };
 
@@ -158,6 +178,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    marginTop: 40,
+  },
+  trackContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  trackHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  trackHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
   },
   header: {
     flexDirection: 'row',
@@ -353,6 +392,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    position:"relative",
+    bottom:0,
   },
   trackOrderButton: {
     backgroundColor: '#4CAF50',
@@ -379,6 +420,46 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontSize: 16,
     fontWeight: '600',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+  statusText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '600',
+  },
+  statusDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  statusDivider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+  },
+  trackFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    backgroundColor: '#fff',
+  },
+  trackHomeButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  trackHomeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

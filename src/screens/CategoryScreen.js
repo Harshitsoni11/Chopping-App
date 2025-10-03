@@ -11,7 +11,7 @@ import ErrorMessage from "../components/ErrorMessage";
 const CategoryScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { categories, loading, error } = useApp();
+  const { categories, loading, error, t } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Calculate responsive bottom padding
@@ -39,11 +39,11 @@ const CategoryScreen = () => {
     <View style={styles.container}>
       {/* Header with Search */}
       <View style={styles.header}>
-        <Text style={styles.heading}>Categories</Text>
+        <Text style={styles.heading}>{t('categories')}</Text>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
           <TextInput
-            placeholder="Search categories..."
+            placeholder={t('searchCategories')}
             placeholderTextColor="#888"
             style={styles.searchInput}
             value={searchQuery}

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from 'expo-image-picker';
 import { useApp } from "../context/AppContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
@@ -23,13 +24,15 @@ const { width } = Dimensions.get("window");
 
 const ProfileScreen = () => {
   const insets = useSafeAreaInsets();
-  const { user, updateUser, loading, error } = useApp();
+  const { user, updateUser, setLanguage, t, loading, error } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [editForm, setEditForm] = useState({
     name: user.name,
     email: user.email,
   });
+  const [selectedLanguage, setSelectedLanguage] = useState(user.language || "English");
 
   // Calculate responsive bottom padding
   const getBottomPadding = () => {
@@ -70,7 +73,7 @@ const ProfileScreen = () => {
         Alert.alert("About Us", "Learn more about our app");
         break;
       case "language":
-        Alert.alert("Language", "Change your language preference");
+        setLanguageModalVisible(true);
         break;
       default:
         Alert.alert("Coming Soon", "This feature is coming soon!");
@@ -81,6 +84,29 @@ const ProfileScreen = () => {
     setEditModalVisible(true);
   };
 
+  const handlePickAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'We need access to your photos to select a profile picture.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const uri = result.assets[0].uri;
+        updateUser({ avatar: uri });
+        Alert.alert('Success', 'Profile picture updated.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
   const handleSaveProfile = () => {
     if (editForm.name.trim() && editForm.email.trim()) {
       updateUser(editForm);
@@ -89,6 +115,12 @@ const ProfileScreen = () => {
     } else {
       Alert.alert("Error", "Please fill in all fields");
     }
+  };
+
+  const handleSaveLanguage = () => {
+    setLanguage(selectedLanguage);
+    setLanguageModalVisible(false);
+    Alert.alert(t('language'), `${selectedLanguage}`);
   };
 
   const handleLogout = () => {
@@ -119,7 +151,7 @@ const ProfileScreen = () => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Profile</Text>
+          <Text style={styles.headerTitle}>{t('myProfile')}</Text>
           <TouchableOpacity
             style={styles.editButton}
             onPress={handleEditProfile}
@@ -132,9 +164,9 @@ const ProfileScreen = () => {
         <View style={styles.userInfoSection}>
           <View style={styles.profileImageContainer}>
             <Image source={{ uri: user.avatar }} style={styles.profileImage} />
-            <View style={styles.socialIcon}>
-              <Text style={styles.socialIconText}>𝕏</Text>
-            </View>
+            <TouchableOpacity style={styles.avatarEditBtn} onPress={handlePickAvatar}>
+              <Ionicons name="camera" size={16} color="#fff" />
+            </TouchableOpacity>
           </View>
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{user.name}</Text>
@@ -167,9 +199,16 @@ const ProfileScreen = () => {
             >
               <View style={styles.menuItemLeft}>
                 <Text style={styles.menuIcon}>{item.icon}</Text>
-                <Text style={styles.menuText}>{item.title}</Text>
+                <Text style={styles.menuText}>{item.action === 'language' ? t('language') : item.title}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              {item.action === "language" ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.languageValue}>{selectedLanguage}</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                </View>
+              ) : (
+                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -236,6 +275,51 @@ const ProfileScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={languageModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Language</Text>
+
+            <TouchableOpacity
+              style={[styles.languageOption, selectedLanguage === "English" && styles.languageOptionActive]}
+              onPress={() => setSelectedLanguage("English")}
+            >
+              <Text style={styles.languageText}>English</Text>
+              {selectedLanguage === "English" && <Ionicons name="checkmark" size={18} color="#4CAF50" />}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.languageOption, selectedLanguage === "Hindi" && styles.languageOptionActive]}
+              onPress={() => setSelectedLanguage("Hindi")}
+            >
+              <Text style={styles.languageText}>Hindi</Text>
+              {selectedLanguage === "Hindi" && <Ionicons name="checkmark" size={18} color="#4CAF50" />}
+            </TouchableOpacity>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setLanguageModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleSaveLanguage}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -282,20 +366,25 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   socialIcon: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#FF0000",
-    justifyContent: "center",
-    alignItems: "center",
+    display: 'none',
   },
   socialIconText: {
     color: "#fff",
     fontSize: 12,
     fontWeight: "bold",
+  },
+  avatarEditBtn: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   userDetails: {
     marginLeft: 15,
@@ -372,6 +461,11 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 16,
     color: "#000",
+  },
+  languageValue: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 6,
   },
   chevron: {
     fontSize: 20,
@@ -454,6 +548,26 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+  },
+  languageOptionActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E8',
+  },
+  languageText: {
+    fontSize: 16,
+    color: '#111',
+    fontWeight: '600',
   },
 });
 

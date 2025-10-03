@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useApp } from "../context/AppContext";
-import OrderSuccessModal from "../components/OrderSuccessModal";
+import OrderSuccessModal from "../components/OrderDetail/OrderSuccessModal";
 
 const { width } = Dimensions.get("window");
 
@@ -211,6 +211,7 @@ const DeliveryPaymentScreen = () => {
           timeSlot: timeSlots.find(slot => slot.id === selectedTimeSlot)?.label,
         }}
       />
+
     </SafeAreaView>
   );
 };

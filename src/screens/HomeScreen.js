@@ -26,7 +26,7 @@ const { width } = Dimensions.get("window");
 const HomeScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { products, loading, error, addToCart, setError } = useApp();
+  const { products, loading, error, addToCart, setError, t } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);

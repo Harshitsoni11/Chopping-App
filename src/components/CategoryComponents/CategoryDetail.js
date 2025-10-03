@@ -25,9 +25,7 @@ const CategoryDetail = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
-  const { products, addToCart, cartItemsCount, loading, error } = useApp();
-  const [sortBy, setSortBy] = useState("name");
-  const [filterBy, setFilterBy] = useState("all");
+  const { products, addToCart, cartItemsCount, t, loading, error } = useApp();
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -39,30 +37,47 @@ const CategoryDetail = () => {
     return totalBottomPadding;
   };
 
-  const { categoryTitle = "Products", categoryId } = route.params || {};
+  const { categoryTitle = "Smoothie Packs", categoryId } = route.params || {};
 
-  // Filter products by category
-  const filteredProducts = products.filter(product => {
-    const matchesCategory = !categoryId || product.category === categoryTitle;
-    const matchesFilter = filterBy === "all" || 
-      (filterBy === "inStock" && product.inStock) ||
-      (filterBy === "onSale" && product.originalPrice > product.price);
-    return matchesCategory && matchesFilter;
-  });
+  // Filter products by category only (simple, matches the mock)
+  const sortedProducts = products
+    .filter(product => (!categoryId || product.category === categoryTitle))
+    .sort((a, b) => a.title.localeCompare(b.title));
 
-  // Sort products
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case "price-low":
-        return a.price - b.price;
-      case "price-high":
-        return b.price - a.price;
-      case "rating":
-        return b.rating - a.rating;
-      default:
-        return a.title.localeCompare(b.title);
-    }
-  });
+  // Static fallback data to show immediately (matches mock)
+  const staticProducts = [
+    {
+      id: "sp-1",
+      title: "Berry Blast Mix",
+      price: 14.9,
+      image: "https://i.ibb.co/2nKz4VJ/berry.jpg",
+      inStock: true,
+    },
+    {
+      id: "sp-2",
+      title: "Tropical Paraaia",
+      price: 11.9,
+      image: "https://picsum.photos/400/400?fruit7",
+      inStock: true,
+    },
+    {
+      id: "sp-3",
+      title: "Green Detox",
+      price: 14.9,
+      image: "https://picsum.photos/400/400?fruit8",
+      inStock: true,
+    },
+    {
+      id: "sp-4",
+      title: "Protein Smoothie Pack",
+      price: 18.9,
+      image: "https://picsum.photos/400/400?fruit9",
+      inStock: true,
+    },
+  ];
+
+  // Force static data to render to verify UI quickly
+  const dataSource = staticProducts;
 
   const handleAddToCart = (product) => {
     try {
@@ -83,20 +98,11 @@ const CategoryDetail = () => {
       <Image source={{ uri: item.image }} style={styles.image} />
       <View style={styles.cardContent}>
         <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-        <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
         <View style={styles.priceContainer}>
           <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-          {item.originalPrice > item.price && (
-            <Text style={styles.originalPrice}>${item.originalPrice.toFixed(2)}</Text>
-          )}
-        </View>
-        <View style={styles.ratingContainer}>
-          <Ionicons name="star" size={14} color="#FFD700" />
-          <Text style={styles.rating}>{item.rating}</Text>
-          <Text style={styles.reviews}>({item.reviews})</Text>
         </View>
         <TouchableOpacity
-          style={[styles.button, !item.inStock && styles.disabledButton]}
+          style={[styles.ctaButton, !item.inStock && styles.disabledButton]}
           onPress={(e) => {
             e.stopPropagation();
             if (item.inStock) {
@@ -105,9 +111,7 @@ const CategoryDetail = () => {
           }}
           disabled={!item.inStock}
         >
-          <Text style={styles.buttonText}>
-            {item.inStock ? "Add to Cart" : "Out of Stock"}
-          </Text>
+          <Text style={styles.ctaText}>{item.inStock ? "Add to Cart" : "Out of Stock"}</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -153,54 +157,34 @@ const CategoryDetail = () => {
         </View>
       </View>
 
-      {/* Filter and Sort */}
-      <View style={styles.filterContainer}>
-        <View style={styles.filterRow}>
-          <Text style={styles.filterLabel}>Filter:</Text>
-          <TouchableOpacity
-            style={[styles.filterButton, filterBy === "all" && styles.activeFilter]}
-            onPress={() => setFilterBy("all")}
-          >
-            <Text style={[styles.filterText, filterBy === "all" && styles.activeFilterText]}>All</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterButton, filterBy === "inStock" && styles.activeFilter]}
-            onPress={() => setFilterBy("inStock")}
-          >
-            <Text style={[styles.filterText, filterBy === "inStock" && styles.activeFilterText]}>In Stock</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterButton, filterBy === "onSale" && styles.activeFilter]}
-            onPress={() => setFilterBy("onSale")}
-          >
-            <Text style={[styles.filterText, filterBy === "onSale" && styles.activeFilterText]}>On Sale</Text>
-          </TouchableOpacity>
+      {/* Rounded Panel: Category header + grid (matches mock) */}
+      <View style={styles.panel}>
+        <View style={styles.panelHeader}>
+          <Text style={styles.panelTitle}>Category </Text>
+          <View style={styles.panelRight}>
+            <Text style={styles.filterTextSimple}>{t('filter')}</Text>
+            <Ionicons name="checkmark" size={18} color="#22C55E" style={{ marginLeft: 6 }} />
+          </View>
         </View>
-        <View style={styles.sortRow}>
-          <Text style={styles.sortLabel}>Sort:</Text>
-          <TouchableOpacity
-            style={[styles.sortButton, sortBy === "name" && styles.activeSort]}
-            onPress={() => setSortBy("name")}
-          >
-            <Text style={[styles.sortText, sortBy === "name" && styles.activeSortText]}>Name</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.sortButton, sortBy === "price-low" && styles.activeSort]}
-            onPress={() => setSortBy("price-low")}
-          >
-            <Text style={[styles.sortText, sortBy === "price-low" && styles.activeSortText]}>Price ↑</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.sortButton, sortBy === "price-high" && styles.activeSort]}
-            onPress={() => setSortBy("price-high")}
-          >
-            <Text style={[styles.sortText, sortBy === "price-high" && styles.activeSortText]}>Price ↓</Text>
-          </TouchableOpacity>
+        {/* Products Grid */}
+        <View style={styles.productsContainer}>
+          <FlatList
+            data={staticProducts}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            numColumns={2}
+            initialNumToRender={4}
+            removeClippedSubviews={false}
+            style={styles.list}
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={[styles.flatListContent, { paddingBottom: getBottomPadding(), flexGrow: 1 }]}
+          />
         </View>
       </View>
 
       {/* Products Grid */}
-      <View style={styles.productsContainer}>
+      {/* <View style={styles.productsContainer}>
         <FlatList
           data={sortedProducts}
           renderItem={renderItem}
@@ -209,7 +193,7 @@ const CategoryDetail = () => {
           numColumns={2}
           contentContainerStyle={[styles.flatListContent, { paddingBottom: getBottomPadding() }]}
         />
-      </View>
+      </View> */}
 
       {/* Product Detail Modal */}
       <ProductDetailModal
@@ -226,7 +210,7 @@ export default CategoryDetail;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F3F5F7",
   },
   header: {
     flexDirection: "row",
@@ -283,84 +267,68 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
   },
-  filterContainer: {
+  panel: {
+    flex: 1,
     backgroundColor: "#fff",
-    padding: 15,
-    marginBottom: 10,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 16,
+    borderRadius: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 6,
+    overflow: "hidden",
   },
-  filterRow: {
+  panelHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 10,
   },
-  filterLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginRight: 10,
-    color: "#333",
+  panelTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111",
   },
-  filterButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    backgroundColor: "#f0f0f0",
-    marginRight: 8,
-  },
-  activeFilter: {
-    backgroundColor: "#4CAF50",
-  },
-  filterText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#666",
-  },
-  activeFilterText: {
-    color: "#fff",
-  },
-  sortRow: {
+  panelRight: {
     flexDirection: "row",
     alignItems: "center",
   },
-  sortLabel: {
+  filterTextSimple: {
     fontSize: 16,
-    fontWeight: "600",
-    marginRight: 10,
-    color: "#333",
-  },
-  sortButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    backgroundColor: "#f0f0f0",
-    marginRight: 8,
-  },
-  activeSort: {
-    backgroundColor: "#4CAF50",
-  },
-  sortText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#666",
-  },
-  activeSortText: {
-    color: "#fff",
+    fontWeight: "700",
+    color: "#111",
   },
   productsContainer: {
     flex: 1,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
   flatListContent: {
     // paddingBottom will be set dynamically
+    
+   marginHorizontal: 0,
+  },
+  list: {
+    flexGrow: 1,
+  },
+  columnWrapper: {
+    justifyContent: "space-between",
   },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    margin: 6,
-    width: (width - 60) / 2,
+    borderRadius: 14,
+    marginVertical: 10,
+    // exact width so two cards fit per row inside the rounded panel
+    width: (width - 32 - 32 - 12) / 2, // screen - panel margins (32) - container padding (32) - gap (12)
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 3,
     overflow: "hidden",
   },
@@ -379,9 +347,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   description: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 8,
+    display: "none",
   },
   priceContainer: {
     flexDirection: "row",
@@ -400,33 +366,20 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
+    display: "none",
   },
-  rating: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginLeft: 4,
-    color: "#333",
-  },
-  reviews: {
-    fontSize: 12,
-    color: "#666",
-    marginLeft: 4,
-  },
-  button: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 8,
-    borderRadius: 6,
+  ctaButton: {
+    backgroundColor: "#22C55E",
+    paddingVertical: 10,
+    borderRadius: 10,
     alignItems: "center",
   },
   disabledButton: {
     backgroundColor: "#ccc",
   },
-  buttonText: {
+  ctaText: {
     color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
   },
 });
